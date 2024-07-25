@@ -1,12 +1,14 @@
+use anyhow::anyhow;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
-    Argon2,
+    Argon2, PasswordHash, PasswordVerifier,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct User {
     pub id: uuid::Uuid,
+    pub username: String,
     pub name: String,
 
     #[serde(skip_serializing)]
@@ -14,9 +16,28 @@ pub struct User {
     pub added: time::OffsetDateTime,
 }
 
+impl User {
+    pub fn validate_password(&self, password: String) -> Result<(), anyhow::Error> {
+        match &self.passhash {
+            Some(passhash) => {
+                let parsed_hash = PasswordHash::new(&passhash)?;
+                // let status = Argon2::default().verify_password(password, &parsed_hash).is_ok();
+                let status = Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok();
+                match status {
+                    true => Ok(()),
+                    false => Err(anyhow!("Invalid password for user {}", self.username)),
+                }
+            }
+            None => Err(anyhow!("User {} does not have a set password", self.username)),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NewUser {
     pub id: Option<uuid::Uuid>,
+    pub username: String,
+    pub email: Option<String>,
     pub name: String,
     pub password: Option<String>,
 }

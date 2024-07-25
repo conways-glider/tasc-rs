@@ -52,8 +52,9 @@ pub async fn add_user(pool: PgPool, new_user: &NewUser) -> Result<User, anyhow::
 
     let result = sqlx::query_as!(
         User,
-        "INSERT INTO users (id, name, passhash) VALUES ($1, $2, $3) RETURNING *",
+        "INSERT INTO users (id, username, name, passhash) VALUES ($1, $2, $3, $4) RETURNING *",
         &uuid,
+        &new_user.username,
         &new_user.name,
         passhash
     )
@@ -64,7 +65,11 @@ pub async fn add_user(pool: PgPool, new_user: &NewUser) -> Result<User, anyhow::
     // log results
     match result {
         Ok(user) => {
-            info!(?user, "created user");
+            info!(
+                id = user.id.to_string(),
+                username = user.username,
+                "created user"
+            );
             Ok(user)
         }
         Err(err) => {

@@ -3,7 +3,7 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{anyhow, Context};
-use axum::{extract::MatchedPath, http::Request, routing::get, Router};
+use axum::{extract::MatchedPath, http::Request, Router};
 use clap::{arg, command, value_parser};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
@@ -11,6 +11,7 @@ use tower_http::{compression::CompressionLayer, services::ServeDir, trace::Trace
 use tracing::{debug, error, info, info_span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod auth;
 mod config;
 mod error;
 mod user;
@@ -76,11 +77,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // build our application with a route
     let app = Router::new()
-        .route(
-            "/",
-            get(user::handler::root_get_handler).post(user::handler::root_post_handler),
-        )
-        .route("/:user_id", get(user::handler::root_get_by_id_handler))
+        .nest("/auth", auth::get_app())
+        .nest("/users", user::get_app())
         .nest_service("/tasks", ServeDir::new("tasks"))
         .layer(
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

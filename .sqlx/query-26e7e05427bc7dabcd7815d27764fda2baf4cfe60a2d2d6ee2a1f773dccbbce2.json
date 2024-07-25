@@ -10,16 +10,21 @@
       },
       {
         "ordinal": 1,
-        "name": "name",
+        "name": "username",
         "type_info": "Text"
       },
       {
         "ordinal": 2,
-        "name": "passhash",
+        "name": "name",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "passhash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "added",
         "type_info": "Timestamptz"
       }
@@ -28,6 +33,7 @@
       "Left": []
     },
     "nullable": [
+      false,
       false,
       false,
       true,
