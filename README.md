@@ -4,7 +4,10 @@ A task runner
 ## TODO
 
 - Allow custom tasks dir in principal
-- LetsEncrypt and Custom SSL
+- SSL
+  - LetsEncrypt
+  - Requiring SSL and Redirects
+  - Ability to disable SSL and redirect in case of reverse proxy
 - User Management
   - SAML Integration
 - Inventory Management

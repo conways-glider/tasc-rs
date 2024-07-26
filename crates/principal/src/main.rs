@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context};
 use axum::{extract::MatchedPath, http::Request, Router};
 use clap::{arg, command, value_parser};
 use sqlx::postgres::PgPoolOptions;
+use state::AppState;
 use tokio::net::TcpListener;
 use tower_http::{compression::CompressionLayer, services::ServeDir, trace::TraceLayer};
 use tracing::{debug, error, info, info_span};
@@ -14,9 +15,16 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod auth;
 mod config;
 mod error;
+mod state;
 mod user;
 
 const DEFAULT_LOG_CONFIG: &str = "tasc_rs_principal=info,tower_http=info,axum::rejection=trace";
+
+// #[derive(Clone)]
+// struct AppState {
+//     config: config::Config,
+
+// }
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -75,6 +83,11 @@ async fn main() -> Result<(), anyhow::Error> {
         }
     }?;
 
+    let app_state = AppState {
+        config: config.clone(),
+        pool,
+    };
+
     // build our application with a route
     let app = Router::new()
         .nest("/auth", auth::get_app())
@@ -95,7 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
             }),
         )
         .layer(CompressionLayer::new())
-        .with_state(pool);
+        .with_state(app_state);
 
     // run it
     let listener = TcpListener::bind(config.route())

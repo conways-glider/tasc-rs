@@ -5,7 +5,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
-use jsonwebtoken::{errors::ErrorKind, DecodingKey, EncodingKey, Header, TokenData};
+use jsonwebtoken::{errors::ErrorKind, DecodingKey, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -23,7 +23,7 @@ impl User {
     pub fn validate_password(&self, password: String) -> Result<(), anyhow::Error> {
         match &self.passhash {
             Some(passhash) => {
-                let parsed_hash = PasswordHash::new(&passhash)?;
+                let parsed_hash = PasswordHash::new(passhash)?;
                 // let status = Argon2::default().verify_password(password, &parsed_hash).is_ok();
                 let status = Argon2::default()
                     .verify_password(password.as_bytes(), &parsed_hash)
@@ -114,17 +114,20 @@ impl AuthUser {
         Ok(claims)
     }
 
-    pub fn encode(&self, encoding_key: &EncodingKey) -> Result<String, anyhow::Error> {
-        let token = jsonwebtoken::encode(&Header::default(), &self, encoding_key)?;
+    pub fn encode(&self, secret: &[u8]) -> Result<String, anyhow::Error> {
+        let encoding_key = EncodingKey::from_secret(secret);
+        let token = jsonwebtoken::encode(&Header::default(), &self, &encoding_key)?;
         Ok(token)
     }
 
-    pub fn decode(token: &str, decoding_key: &DecodingKey) -> Result<AuthUser, anyhow::Error> {
+    pub fn decode(token: &str, secret: &[u8]) -> Result<AuthUser, anyhow::Error> {
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::default());
         validation.set_issuer(&[ISSUER]);
         validation.set_required_spec_claims(&["exp", "iss"]);
 
-        let token = match jsonwebtoken::decode::<AuthUser>(&token, decoding_key, &validation) {
+        let decoding_key = DecodingKey::from_secret(secret);
+
+        let token = match jsonwebtoken::decode::<AuthUser>(token, &decoding_key, &validation) {
             Ok(c) => c,
             Err(err) => match *err.kind() {
                 ErrorKind::InvalidToken => panic!("Token is invalid"), // Example on how to handle a specific error
