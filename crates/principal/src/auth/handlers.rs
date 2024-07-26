@@ -21,7 +21,7 @@ pub async fn login(
     State(app_state): State<AppState>,
     Json(login_user): Json<LoginUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = super::postgres::get_user_by_username(app_state.pool, login_user.username).await?;
+    let user = crate::db::users::get_user_by_username(app_state.pool, login_user.username).await?;
     match user {
         Some(user) => {
             let result = user.validate_password(login_user.password);
@@ -41,6 +41,6 @@ pub async fn login(
                 Err(_) => Ok(StatusCode::UNAUTHORIZED.into_response()),
             }
         }
-        None => Ok(StatusCode::NOT_FOUND.into_response()),
+        None => Ok(StatusCode::UNAUTHORIZED.into_response()),
     }
 }
