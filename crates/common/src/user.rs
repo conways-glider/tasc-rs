@@ -85,8 +85,6 @@ pub struct AuthUser {
 
     // Custom Fields
     pub id: uuid::Uuid,
-    pub username: String,
-    pub name: String,
 }
 
 impl AuthUser {
@@ -108,8 +106,6 @@ impl AuthUser {
             sub: user.id.to_string(),
 
             id: user.id,
-            username: user.username,
-            name: user.name,
         };
         Ok(claims)
     }
@@ -128,13 +124,13 @@ impl AuthUser {
         let decoding_key = DecodingKey::from_secret(secret);
 
         let token = match jsonwebtoken::decode::<AuthUser>(token, &decoding_key, &validation) {
-            Ok(c) => c,
+            Ok(c) => Ok(c),
             Err(err) => match *err.kind() {
-                ErrorKind::InvalidToken => panic!("Token is invalid"), // Example on how to handle a specific error
-                ErrorKind::InvalidIssuer => panic!("Issuer is invalid"), // Example on how to handle a specific error
-                _ => panic!("Some other errors"),
+                ErrorKind::InvalidToken => Err(anyhow!("token is invalid")), // Example on how to handle a specific error
+                ErrorKind::InvalidIssuer => Err(anyhow!("issuer is invalid")), // Example on how to handle a specific error
+                _ => Err(anyhow!("some other errors")),
             },
-        };
+        }?;
         Ok(token.claims)
     }
 }
