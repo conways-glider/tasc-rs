@@ -1,6 +1,6 @@
 use anyhow::Context;
 use sqlx::PgPool;
-use tasc_rs_common::user::{User};
+use tasc_rs_common::user::User;
 use tracing::{error, info, instrument};
 
 #[instrument(skip(pool))]
