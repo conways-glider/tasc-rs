@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use sqlx::PgPool;
 use tasc_rs_common::user::{NewUser, User};
 use tracing::{error, info, instrument};
@@ -45,6 +45,28 @@ pub async fn get_user_by_id(
 }
 
 #[instrument(skip(pool))]
+pub async fn get_user_by_username(
+    pool: PgPool,
+    username: String,
+) -> Result<Option<User>, anyhow::Error> {
+    let result = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", username)
+        .fetch_optional(&pool)
+        .await
+        .context("could not get user by username");
+
+    // log results
+    match result {
+        Ok(_) => {
+            info!("got user by username");
+        }
+        Err(ref err) => {
+            error!(%err, "could not get user by username");
+        }
+    };
+    result
+}
+
+#[instrument(skip(pool, new_user))]
 pub async fn add_user(pool: PgPool, new_user: &NewUser) -> Result<User, anyhow::Error> {
     let uuid = new_user.get_uuid();
 
@@ -52,24 +74,30 @@ pub async fn add_user(pool: PgPool, new_user: &NewUser) -> Result<User, anyhow::
 
     let result = sqlx::query_as!(
         User,
-        "INSERT INTO users (id, name, passhash) VALUES ($1, $2, $3) RETURNING *",
+        "INSERT INTO users (id, username, name, passhash) VALUES ($1, $2, $3, $4) RETURNING *",
         &uuid,
+        &new_user.username,
         &new_user.name,
         passhash
     )
     .fetch_one(&pool)
-    .await
-    .context("could not add user");
+    .await;
+    // .context("could not add user");
 
     // log results
     match result {
         Ok(user) => {
-            info!(?user, "created user");
+            info!(
+                id = user.id.to_string(),
+                username = user.username,
+                "created user"
+            );
             Ok(user)
         }
         Err(err) => {
             error!(%err, "could not create user");
-            Err(err)
+            // Err(err)
+            Err(anyhow!("could not add user"))
         }
     }
 }

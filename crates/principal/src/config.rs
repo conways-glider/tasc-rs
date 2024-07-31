@@ -10,7 +10,7 @@ pub fn get_default_config_file() -> Option<PathBuf> {
     dirs::home_dir().map(|path| path.join(CONFIG_FOLDER).join(CONFIG_FILE))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     #[serde(default = "default_host")]
     pub host: String,
@@ -18,8 +18,7 @@ pub struct Config {
     #[serde(default = "default_port")]
     pub port: u16,
 
-    #[serde(default)]
-    pub require_ssl: bool,
+    pub auth: Auth,
 
     pub database: Database,
 }
@@ -31,7 +30,13 @@ fn default_port() -> u16 {
     3000
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
+pub struct Auth {
+    #[serde(default)]
+    pub jwt_secret: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Database {
     pub url: String,
 }

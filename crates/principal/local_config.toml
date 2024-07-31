@@ -1,6 +1,13 @@
 host = "127.0.0.1"
 port = 3000
+require_ssl = false
+
+[auth]
+jwt_secret = "changeme"
+
+[ssl]
+key_path = ""
+cert_path = ""
 
 [database]
-# url = "sqlite::memory:"
 url = "postgres://postgres:password@localhost:5432"
